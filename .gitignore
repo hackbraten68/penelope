@@ -1,0 +1,28 @@
+# Runtime / assembled bundle artefacts
+penelope-common.sh
+MANIFEST.md
+SHA256SUMS.txt
+*.zip
+*.zip.sha1
+*.zip.sha256
+
+# Chat / RC handoff artefacts
+penelope_project_status-*.md
+penelope-rc01-handoff-*.md
+penelope-rc01-transition-prompt-*.txt
+
+# Patch bundle history artefacts
+diffs/
+*.diff
+*.patch
+
+# Local work / archives / logs
+logs/
+old/
+*.log
+
+# Operator-local install/runtime config and secrets
+penelope-install.bootstrap.conf
+penelope-install.layout.conf
+*.secret
+*.7z
