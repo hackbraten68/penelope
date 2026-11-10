@@ -134,3 +134,13 @@ with open('penelope-guidelines-0.0.269.yaml', 'r', encoding='utf-8') as fh:
 print('guidelines-yaml-ok')
 PY
 ```
+
+## Single-window operator flow
+
+Run the walkthrough assistant in **one** terminal as the master guide:
+
+```bash
+./penelope-walkthrough-assistant-*.sh live-usb
+```
+
+The install terminal is output-only.
