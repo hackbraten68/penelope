@@ -962,6 +962,17 @@ TARGET_HOST="REPLACE_WITH_TARGET_HOST"
 # - Set CRED_LOGIN_PW before the real install.
 CRED_MASTER_PW="change-me"
 CRED_LOGIN_PW="change-me"
+
+# Feature toggles:
+WALKTHROUGH_MODE="deferred"
+DOCKER_INSTALL="1"
+DOCKER_REPO_CHANNEL="stable"
+DOCKER_COMPOSE_PLUGIN="1"
+WINBOAT_ENABLED="0"
+WINBOAT_IMAGE_URL=""
+WINBOAT_IMAGE_SHA256=""
+WINBOAT_COMPOSE_DIR="/opt/penelope/winboat"
+WINBOAT_AUTOSTART="0"
 EOF_INSTALL_BOOTSTRAP_CONFIG
 
   mv -f -- "${tmp_path}" "${out_path}" || { rm -f -- "${tmp_path}"; die "Could not move bootstrap config template into place: ${out_path}"; }
