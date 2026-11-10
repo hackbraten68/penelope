@@ -10222,6 +10222,11 @@ Verification/inspection commands on the installed system:
 
 When you are ready:
   sudo reboot
+
+Single-window flow:
+  Run the walkthrough assistant in ONE terminal as the master guide:
+    ./penelope-walkthrough-assistant-*.sh live-usb
+  The install terminal is output-only; do not run a second walkthrough there.
 EOF_USAGE
 }
 
