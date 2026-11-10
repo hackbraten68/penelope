@@ -109,6 +109,9 @@ WINBOAT_IMAGE_URL=""
 WINBOAT_IMAGE_SHA256=""
 WINBOAT_COMPOSE_DIR="/opt/penelope/winboat"
 WINBOAT_AUTOSTART="0"
+WINBOAT_RAM_SIZE="8G"
+WINBOAT_CPU_CORES="4"
+WINBOAT_DISK_SIZE="128G"
 
 # Secrets stay shielded against accidental xtrace exposure below even though they are now expected
 # to arrive via --bootstrap-config for real provisioning runs.
@@ -863,7 +866,7 @@ apply_install_layout_config_line_or_die() {
 
 install_bootstrap_config_recognized_key_or_die() {
   case "${1:-}" in
-    INSTALL_BOOTSTRAP_CONFIG_SCHEMA_VERSION|ADMIN_USER|TARGET_HOST|CRED_MASTER_PW|CRED_LOGIN_PW|WALKTHROUGH_MODE|DOCKER_INSTALL|DOCKER_REPO_CHANNEL|DOCKER_COMPOSE_PLUGIN|WINBOAT_ENABLED|WINBOAT_IMAGE_URL|WINBOAT_IMAGE_SHA256|WINBOAT_COMPOSE_DIR|WINBOAT_AUTOSTART)
+    INSTALL_BOOTSTRAP_CONFIG_SCHEMA_VERSION|ADMIN_USER|TARGET_HOST|CRED_MASTER_PW|CRED_LOGIN_PW|WALKTHROUGH_MODE|DOCKER_INSTALL|DOCKER_REPO_CHANNEL|DOCKER_COMPOSE_PLUGIN|WINBOAT_ENABLED|WINBOAT_IMAGE_URL|WINBOAT_IMAGE_SHA256|WINBOAT_COMPOSE_DIR|WINBOAT_AUTOSTART|WINBOAT_RAM_SIZE|WINBOAT_CPU_CORES|WINBOAT_DISK_SIZE)
       ;;
     *)
       die "Unknown key in install bootstrap config: ${1:-<empty>}"
@@ -908,6 +911,9 @@ apply_install_bootstrap_config_line_or_die() {
     WINBOAT_IMAGE_SHA256) WINBOAT_IMAGE_SHA256="${value}" ;;
     WINBOAT_COMPOSE_DIR) WINBOAT_COMPOSE_DIR="${value}" ;;
     WINBOAT_AUTOSTART) WINBOAT_AUTOSTART="${value}" ;;
+    WINBOAT_RAM_SIZE) WINBOAT_RAM_SIZE="${value}" ;;
+    WINBOAT_CPU_CORES) WINBOAT_CPU_CORES="${value}" ;;
+    WINBOAT_DISK_SIZE) WINBOAT_DISK_SIZE="${value}" ;;
     *) die "Unhandled install bootstrap config key: ${key}" ;;
   esac
 }
@@ -973,6 +979,9 @@ WINBOAT_IMAGE_URL=""
 WINBOAT_IMAGE_SHA256=""
 WINBOAT_COMPOSE_DIR="/opt/penelope/winboat"
 WINBOAT_AUTOSTART="0"
+WINBOAT_RAM_SIZE="8G"
+WINBOAT_CPU_CORES="4"
+WINBOAT_DISK_SIZE="128G"
 EOF_INSTALL_BOOTSTRAP_CONFIG
 
   mv -f -- "${tmp_path}" "${out_path}" || { rm -f -- "${tmp_path}"; die "Could not move bootstrap config template into place: ${out_path}"; }
@@ -3502,6 +3511,7 @@ configure_in_chroot() {
   EFI_UUID="$EFI_UUID" BOOT_UUID="$BOOT_UUID" ROOT_UUID="$ROOT_UUID" HOME_UUID="$HOME_UUID" \
   ARCHIVE_UUID="$ARCHIVE_UUID" BACKUP_UUID="$BACKUP_UUID" \
   LUKS_ROOT_UUID="$LUKS_ROOT_UUID" LUKS_HOME_UUID="$LUKS_HOME_UUID" LUKS_ARCHIVE_UUID="$LUKS_ARCHIVE_UUID" \
+  WINBOAT_RAM_SIZE="${WINBOAT_RAM_SIZE:-8G}" WINBOAT_CPU_CORES="${WINBOAT_CPU_CORES:-4}" WINBOAT_DISK_SIZE="${WINBOAT_DISK_SIZE:-128G}" \
   DROPBEAR_KEY_NAME="$DROPBEAR_KEY_NAME" ADMIN_SSH_KEY_NAME="$ADMIN_SSH_KEY_NAME" KEY_STAGE_DIR="$KEY_STAGE_DIR" \
   MAPPER_ROOT="$MAPPER_ROOT" MAPPER_HOME="$MAPPER_HOME" MAPPER_ARCHIVE="$MAPPER_ARCHIVE" BACKUP_DEV="$BACKUP_DEV" \
   INITRAMFS_DEBUG_RETRY="$INITRAMFS_DEBUG_RETRY" \
@@ -10135,16 +10145,16 @@ echo "=== end manifest (POST) ==="
                 fi
               fi
             fi
-            cat > "${WINBOAT_DIR}/docker-compose.yml" <<'COMPOSE_EOF'
+            cat > "${WINBOAT_DIR}/docker-compose.yml" <<COMPOSE_EOF
 services:
   windows:
     image: dockurr/windows
     container_name: windows-server-2025
     environment:
       VERSION: "2025"
-      RAM_SIZE: "8G"
-      CPU_CORES: "4"
-      DISK_SIZE: "128G"
+      RAM_SIZE: "${WINBOAT_RAM_SIZE:-8G}"
+      CPU_CORES: "${WINBOAT_CPU_CORES:-4}"
+      DISK_SIZE: "${WINBOAT_DISK_SIZE:-128G}"
     devices:
       - /dev/kvm
       - /dev/net/tun
