@@ -10137,14 +10137,26 @@ echo "=== end manifest (POST) ==="
             fi
             cat > "${WINBOAT_DIR}/docker-compose.yml" <<'COMPOSE_EOF'
 services:
-  winboat:
-    image: ghcr.io/winboat/winboat:latest
-    container_name: winboat
-    restart: unless-stopped
-    volumes:
-      - ./images:/data/images
+  windows:
+    image: dockurr/windows
+    container_name: windows-server-2025
+    environment:
+      VERSION: "2025"
+      RAM_SIZE: "8G"
+      CPU_CORES: "4"
+      DISK_SIZE: "128G"
+    devices:
+      - /dev/kvm
+      - /dev/net/tun
+    cap_add:
+      - NET_ADMIN
     ports:
       - "8006:8006"
+      - "3389:3389/tcp"
+      - "3389:3389/udp"
+    volumes:
+      - ./windows:/storage
+    restart: unless-stopped
 COMPOSE_EOF
             if [[ "${WINBOAT_AUTOSTART:-0}" == "1" ]]; then
               (cd "${WINBOAT_DIR}" && docker compose up -d) || warn "WinBoat autostart failed"
