@@ -144,3 +144,16 @@ Run the walkthrough assistant in **one** terminal as the master guide:
 ```
 
 The install terminal is output-only.
+
+## Windows VM setup (separate bundle)
+
+After the first boot of the installed system, run the separate bundle:
+
+```bash
+./penelope-windows-vm-setup-0.0.1.sh --write-config
+# edit penelope-windows-vm.bootstrap.conf
+./penelope-windows-vm-setup-0.0.1.sh --verify-config
+sudo -E ./penelope-windows-vm-setup-0.0.1.sh apply
+```
+
+See `penelope-winboat-setup.md` for details.
