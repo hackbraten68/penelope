@@ -101,17 +101,6 @@ TARGET_HOST=""              # Loaded from --bootstrap-config for full provisioni
 
 # Feature toggles (defaults; overridable via --bootstrap-config)
 WALKTHROUGH_MODE="deferred"
-DOCKER_INSTALL="1"
-DOCKER_REPO_CHANNEL="stable"
-DOCKER_COMPOSE_PLUGIN="1"
-WINBOAT_ENABLED="0"
-WINBOAT_IMAGE_URL=""
-WINBOAT_IMAGE_SHA256=""
-WINBOAT_COMPOSE_DIR="/opt/penelope/winboat"
-WINBOAT_AUTOSTART="0"
-WINBOAT_RAM_SIZE="8G"
-WINBOAT_CPU_CORES="4"
-WINBOAT_DISK_SIZE="128G"
 
 # Secrets stay shielded against accidental xtrace exposure below even though they are now expected
 # to arrive via --bootstrap-config for real provisioning runs.
@@ -866,7 +855,7 @@ apply_install_layout_config_line_or_die() {
 
 install_bootstrap_config_recognized_key_or_die() {
   case "${1:-}" in
-    INSTALL_BOOTSTRAP_CONFIG_SCHEMA_VERSION|ADMIN_USER|TARGET_HOST|CRED_MASTER_PW|CRED_LOGIN_PW|WALKTHROUGH_MODE|DOCKER_INSTALL|DOCKER_REPO_CHANNEL|DOCKER_COMPOSE_PLUGIN|WINBOAT_ENABLED|WINBOAT_IMAGE_URL|WINBOAT_IMAGE_SHA256|WINBOAT_COMPOSE_DIR|WINBOAT_AUTOSTART|WINBOAT_RAM_SIZE|WINBOAT_CPU_CORES|WINBOAT_DISK_SIZE)
+    INSTALL_BOOTSTRAP_CONFIG_SCHEMA_VERSION|ADMIN_USER|TARGET_HOST|CRED_MASTER_PW|CRED_LOGIN_PW|WALKTHROUGH_MODE)
       ;;
     *)
       die "Unknown key in install bootstrap config: ${1:-<empty>}"
@@ -903,17 +892,6 @@ apply_install_bootstrap_config_line_or_die() {
     CRED_MASTER_PW) CRED_MASTER_PW="${value}"; INSTALL_BOOTSTRAP_CONFIG_SEEN_CRED_MASTER_PW="1" ;;
     CRED_LOGIN_PW) CRED_LOGIN_PW="${value}"; INSTALL_BOOTSTRAP_CONFIG_SEEN_CRED_LOGIN_PW="1" ;;
     WALKTHROUGH_MODE) WALKTHROUGH_MODE="${value}" ;;
-    DOCKER_INSTALL) DOCKER_INSTALL="${value}" ;;
-    DOCKER_REPO_CHANNEL) DOCKER_REPO_CHANNEL="${value}" ;;
-    DOCKER_COMPOSE_PLUGIN) DOCKER_COMPOSE_PLUGIN="${value}" ;;
-    WINBOAT_ENABLED) WINBOAT_ENABLED="${value}" ;;
-    WINBOAT_IMAGE_URL) WINBOAT_IMAGE_URL="${value}" ;;
-    WINBOAT_IMAGE_SHA256) WINBOAT_IMAGE_SHA256="${value}" ;;
-    WINBOAT_COMPOSE_DIR) WINBOAT_COMPOSE_DIR="${value}" ;;
-    WINBOAT_AUTOSTART) WINBOAT_AUTOSTART="${value}" ;;
-    WINBOAT_RAM_SIZE) WINBOAT_RAM_SIZE="${value}" ;;
-    WINBOAT_CPU_CORES) WINBOAT_CPU_CORES="${value}" ;;
-    WINBOAT_DISK_SIZE) WINBOAT_DISK_SIZE="${value}" ;;
     *) die "Unhandled install bootstrap config key: ${key}" ;;
   esac
 }
@@ -971,17 +949,6 @@ CRED_LOGIN_PW="change-me"
 
 # Feature toggles:
 WALKTHROUGH_MODE="deferred"
-DOCKER_INSTALL="1"
-DOCKER_REPO_CHANNEL="stable"
-DOCKER_COMPOSE_PLUGIN="1"
-WINBOAT_ENABLED="0"
-WINBOAT_IMAGE_URL=""
-WINBOAT_IMAGE_SHA256=""
-WINBOAT_COMPOSE_DIR="/opt/penelope/winboat"
-WINBOAT_AUTOSTART="0"
-WINBOAT_RAM_SIZE="8G"
-WINBOAT_CPU_CORES="4"
-WINBOAT_DISK_SIZE="128G"
 EOF_INSTALL_BOOTSTRAP_CONFIG
 
   mv -f -- "${tmp_path}" "${out_path}" || { rm -f -- "${tmp_path}"; die "Could not move bootstrap config template into place: ${out_path}"; }
@@ -3511,7 +3478,6 @@ configure_in_chroot() {
   EFI_UUID="$EFI_UUID" BOOT_UUID="$BOOT_UUID" ROOT_UUID="$ROOT_UUID" HOME_UUID="$HOME_UUID" \
   ARCHIVE_UUID="$ARCHIVE_UUID" BACKUP_UUID="$BACKUP_UUID" \
   LUKS_ROOT_UUID="$LUKS_ROOT_UUID" LUKS_HOME_UUID="$LUKS_HOME_UUID" LUKS_ARCHIVE_UUID="$LUKS_ARCHIVE_UUID" \
-  WINBOAT_RAM_SIZE="${WINBOAT_RAM_SIZE:-8G}" WINBOAT_CPU_CORES="${WINBOAT_CPU_CORES:-4}" WINBOAT_DISK_SIZE="${WINBOAT_DISK_SIZE:-128G}" \
   DROPBEAR_KEY_NAME="$DROPBEAR_KEY_NAME" ADMIN_SSH_KEY_NAME="$ADMIN_SSH_KEY_NAME" KEY_STAGE_DIR="$KEY_STAGE_DIR" \
   MAPPER_ROOT="$MAPPER_ROOT" MAPPER_HOME="$MAPPER_HOME" MAPPER_ARCHIVE="$MAPPER_ARCHIVE" BACKUP_DEV="$BACKUP_DEV" \
   INITRAMFS_DEBUG_RETRY="$INITRAMFS_DEBUG_RETRY" \
@@ -10111,71 +10077,8 @@ echo "=== end manifest (POST) ==="
 
           fi
 
-          # ---- Penelope: Docker + Compose (official repo) ----
-          if [[ "${DOCKER_INSTALL:-1}" == "1" ]]; then
-            log "Installing Docker via official repository (channel=${DOCKER_REPO_CHANNEL:-stable})"
-            apt-get update
-            apt-get install -y ca-certificates curl gnupg
-            install -m 0755 -d /etc/apt/keyrings
-            curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-            chmod a+r /etc/apt/keyrings/docker.asc
-            . /etc/os-release
-            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${VERSION_CODENAME} ${DOCKER_REPO_CHANNEL:-stable}" > /etc/apt/sources.list.d/docker.list
-            apt-get update
-            apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-            mkdir -p /etc/systemd/system/multi-user.target.wants
-            ln -sf /lib/systemd/system/docker.service /etc/systemd/system/multi-user.target.wants/docker.service
-            docker --version || true
-            docker compose version || true
-          else
-            log "Docker install skipped (DOCKER_INSTALL=0)"
-          fi
-
-          # ---- Penelope: WinBoat stack ----
-          if [[ "${WINBOAT_ENABLED:-0}" == "1" ]]; then
-            WINBOAT_DIR="${WINBOAT_COMPOSE_DIR:-/opt/penelope/winboat}"
-            mkdir -p "${WINBOAT_DIR}/images"
-            if [[ -n "${WINBOAT_IMAGE_URL:-}" ]]; then
-              IMG="${WINBOAT_DIR}/images/windows-server.img"
-              if [[ ! -f "${IMG}" ]] || [[ -n "${WINBOAT_IMAGE_SHA256:-}" && "$(sha256sum "${IMG}" | awk '{print $1}')" != "${WINBOAT_IMAGE_SHA256}" ]]; then
-                log "Downloading Windows Server image for WinBoat"
-                curl -fL --retry 3 -C - -o "${IMG}" "${WINBOAT_IMAGE_URL}"
-                if [[ -n "${WINBOAT_IMAGE_SHA256:-}" ]]; then
-                  echo "${WINBOAT_IMAGE_SHA256}  ${IMG}" | sha256sum -c -
-                fi
-              fi
-            fi
-            cat > "${WINBOAT_DIR}/docker-compose.yml" <<COMPOSE_EOF
-services:
-  windows:
-    image: dockurr/windows
-    container_name: windows-server-2025
-    environment:
-      VERSION: "2025"
-      RAM_SIZE: "${WINBOAT_RAM_SIZE:-8G}"
-      CPU_CORES: "${WINBOAT_CPU_CORES:-4}"
-      DISK_SIZE: "${WINBOAT_DISK_SIZE:-128G}"
-    devices:
-      - /dev/kvm
-      - /dev/net/tun
-    cap_add:
-      - NET_ADMIN
-    ports:
-      - "8006:8006"
-      - "3389:3389/tcp"
-      - "3389:3389/udp"
-    volumes:
-      - ./windows:/storage
-    restart: unless-stopped
-COMPOSE_EOF
-            if [[ "${WINBOAT_AUTOSTART:-0}" == "1" ]]; then
-              (cd "${WINBOAT_DIR}" && docker compose up -d) || warn "WinBoat autostart failed"
-            fi
-          else
-            log "WinBoat disabled (WINBOAT_ENABLED=0)"
-          fi
-
           log "chroot complete"
+
 
 CHROOT_EOF
   then
